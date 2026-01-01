@@ -317,6 +317,18 @@ void Context::submitFrame() {
     MLN_TRACE_FUNC();
     const auto& dispatcher = backend.getDispatcher();
     const auto& frame = frameResources[frameResourceIndex];
+
+    // Call pre-submit callback for overlay rendering (e.g., ImGui)
+    if (preSubmitCallback) {
+        auto& renderableResource = backend.getDefaultRenderable().getResource<SurfaceRenderableResource>();
+        const auto& extent = renderableResource.getExtent();
+        preSubmitCallback(frame.commandBuffer,
+                          renderableResource.getOverlayRenderPass(),
+                          renderableResource.getFramebuffer(),
+                          extent.width,
+                          extent.height);
+    }
+
     frame.commandBuffer->end(dispatcher);
 
     const auto& device = backend.getDevice();

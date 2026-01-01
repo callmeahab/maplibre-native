@@ -17,6 +17,7 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include <functional>
 
 namespace mbgl {
 
@@ -148,6 +149,17 @@ public:
 
     void requestSurfaceUpdate(bool useDelay = true);
 
+    /// Pre-submit callback type - called just before command buffer ends
+    /// Parameters: command buffer, render pass, framebuffer, width, height
+    using PreSubmitCallback = std::function<void(const vk::UniqueCommandBuffer&,
+                                                  const vk::UniqueRenderPass&,
+                                                  const vk::UniqueFramebuffer&,
+                                                  uint32_t width, uint32_t height)>;
+
+    /// Set a callback to be invoked before submitting the frame
+    /// This allows injecting additional rendering (like ImGui) before presentation
+    void setPreSubmitCallback(PreSubmitCallback callback) { preSubmitCallback = std::move(callback); }
+
 private:
     struct FrameResources {
         vk::UniqueCommandBuffer commandBuffer;
@@ -192,6 +204,8 @@ private:
     bool surfaceUpdateRequested{false};
     int32_t surfaceUpdateLatency{0};
     int32_t currentFrameCount{0};
+
+    PreSubmitCallback preSubmitCallback;
 
     struct {
         gfx::ShaderProgramBasePtr shader;

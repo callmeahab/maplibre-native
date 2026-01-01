@@ -382,6 +382,35 @@ void SurfaceRenderableResource::init(uint32_t w, uint32_t h) {
 
     renderPass = device->createRenderPassUnique(renderPassCreateInfo, nullptr, dispatcher);
 
+    // Create overlay render pass (uses LOAD_OP_LOAD to preserve content for UI overlays)
+    {
+        const std::array<vk::AttachmentDescription, 2> overlayAttachments = {
+            vk::AttachmentDescription()
+                .setFormat(colorFormat)
+                .setSamples(vk::SampleCountFlagBits::e1)
+                .setLoadOp(vk::AttachmentLoadOp::eLoad)  // Preserve existing content
+                .setStoreOp(vk::AttachmentStoreOp::eStore)
+                .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                .setInitialLayout(colorLayout)  // Already in correct layout from main render pass
+                .setFinalLayout(colorLayout),
+
+            vk::AttachmentDescription()
+                .setFormat(depthFormat)
+                .setSamples(vk::SampleCountFlagBits::e1)
+                .setLoadOp(vk::AttachmentLoadOp::eLoad)
+                .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+                .setStencilLoadOp(vk::AttachmentLoadOp::eLoad)
+                .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                .setInitialLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+                .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)};
+
+        const auto overlayRenderPassCreateInfo =
+            vk::RenderPassCreateInfo().setAttachments(overlayAttachments).setSubpasses(subpass).setDependencies(dependencies);
+
+        overlayRenderPass = device->createRenderPassUnique(overlayRenderPassCreateInfo, nullptr, dispatcher);
+    }
+
     // create swapchain framebuffers
     swapchainFramebuffers.reserve(swapchainImageViews.size());
 
@@ -407,6 +436,7 @@ void SurfaceRenderableResource::recreateSwapchain() {
 
     swapchainFramebuffers.clear();
     renderPass.reset();
+    overlayRenderPass.reset();
     swapchainImageViews.clear();
     swapchainImages.clear();
     acquireSemaphores.clear();

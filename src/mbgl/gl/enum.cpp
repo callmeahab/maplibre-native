@@ -380,7 +380,10 @@ platform::GLenum Enum<gfx::TexturePixelType>::to(const gfx::TexturePixelType val
         case gfx::TexturePixelType::RGBA:
             return GL_RGBA;
         case gfx::TexturePixelType::Alpha:
-            return GL_ALPHA;
+            // Use GL_RED instead of GL_ALPHA for OpenGL Core Profile compatibility.
+            // GL_ALPHA was removed in OpenGL 3.1+ core profile.
+            // Texture swizzle must be used to map RED -> ALPHA for shader compatibility.
+            return GL_RED;
         case gfx::TexturePixelType::Stencil:
             return GL_STENCIL_INDEX;
         case gfx::TexturePixelType::Depth:
@@ -397,12 +400,18 @@ platform::GLenum Enum<gfx::TexturePixelType>::sizedFor<>(const gfx::TexturePixel
                                                          gfx::TextureChannelDataType type) {
     switch (type) {
         case gfx::TextureChannelDataType::UnsignedByte: {
+            // For Alpha textures, use GL_R8 as internal format for Core Profile compatibility
+            if (value == gfx::TexturePixelType::Alpha) {
+                return GL_R8;
+            }
             return Enum<gfx::TexturePixelType>::to(value);
         }
         case gfx::TextureChannelDataType::HalfFloat: {
             switch (value) {
                 case gfx::TexturePixelType::RGBA:
                     return GL_RGBA16F;
+                case gfx::TexturePixelType::Alpha:
+                    return GL_R16F;
                 default:
                     break;
             }
@@ -412,6 +421,8 @@ platform::GLenum Enum<gfx::TexturePixelType>::sizedFor<>(const gfx::TexturePixel
             switch (value) {
                 case gfx::TexturePixelType::RGBA:
                     return GL_RGBA32F;
+                case gfx::TexturePixelType::Alpha:
+                    return GL_R32F;
                 default:
                     break;
             }

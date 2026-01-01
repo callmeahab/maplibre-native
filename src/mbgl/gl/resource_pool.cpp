@@ -153,6 +153,16 @@ TextureID Texture2DPool::allocateGLMemory(const Texture2DDesc& desc) {
                                   Enum<gfx::TextureChannelDataType>::to(desc.channelType),
                                   nullptr));
 
+    // For Alpha textures using GL_R8 format, set up texture swizzle to map RED -> ALPHA.
+    // This is needed because GL_ALPHA is deprecated in OpenGL Core Profile, so we use
+    // GL_R8/GL_RED instead. Shaders sample the .a channel, so we swizzle RED to ALPHA.
+    if (desc.pixelFormat == gfx::TexturePixelType::Alpha) {
+        MBGL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ZERO));
+        MBGL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ZERO));
+        MBGL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ZERO));
+        MBGL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED));
+    }
+
     // Update stats
     context->renderingStats().numCreatedTextures++;
 

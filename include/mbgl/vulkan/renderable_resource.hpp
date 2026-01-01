@@ -30,6 +30,7 @@ protected:
 
     vk::Extent2D extent;
     vk::UniqueRenderPass renderPass;
+    vk::UniqueRenderPass overlayRenderPass;  // Uses LOAD_OP_LOAD for overlay rendering
 };
 
 class SurfaceRenderableResource : public RenderableResource {
@@ -60,6 +61,9 @@ public:
     const vk::Image getAcquiredImage() const;
     const vk::Semaphore& getAcquireSemaphore() const;
     const vk::Semaphore& getPresentSemaphore() const;
+
+    /// Get render pass for overlay rendering (uses LOAD_OP_LOAD to preserve content)
+    const vk::UniqueRenderPass& getOverlayRenderPass() const { return overlayRenderPass; }
 
     bool hasSurfaceTransformSupport() const;
     bool didSurfaceTransformUpdate() const;
